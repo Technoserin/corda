@@ -26,6 +26,8 @@ interface TestCordapp {
     /** Returns the target platform version, defaults to the current platform version if not specified. */
     val targetVersion: Int
 
+    val implementationVersion: String
+
     /** Returns the config for this CorDapp, defaults to empty if not specified. */
     val config: Map<String, Any>
 
@@ -57,6 +59,9 @@ interface TestCordapp {
      *  Optionally can pass in the location of an existing java key store to use */
     fun signJar(keyStorePath: Path? = null): TestCordappImpl
 
+    fun withImplementationVersion(version: String): TestCordapp
+
+
     class Factory {
         companion object {
             /**
@@ -71,13 +76,14 @@ interface TestCordapp {
              * default values, which can be changed with the wither methods.
              */
             @JvmStatic
-            fun fromPackages(packageNames: Collection<String>): TestCordapp {
+            fun fromPackages(packageNames: Collection<String>, implementationVersion: String = "1.0"): TestCordapp {
                 return TestCordappImpl(
                         name = "test-name",
                         version = "1.0",
                         vendor = "test-vendor",
                         title = "test-title",
                         targetVersion = PLATFORM_VERSION,
+                        implementationVersion = implementationVersion,
                         config = emptyMap(),
                         packages = simplifyScanPackages(packageNames),
                         classes = emptySet()
