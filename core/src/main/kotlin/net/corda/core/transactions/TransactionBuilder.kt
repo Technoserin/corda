@@ -17,8 +17,9 @@ import net.corda.core.node.services.vault.AttachmentQueryCriteria
 import net.corda.core.node.services.vault.Builder
 import net.corda.core.serialization.SerializationContext
 import net.corda.core.serialization.SerializationFactory
+import net.corda.core.transactions.LedgerTransaction.Companion.requireCompatibleContractClassVersions
+import net.corda.core.transactions.WireTransaction.Companion.resolveContractAttachmentVersion
 import net.corda.core.utilities.contextLogger
-import net.corda.core.utilities.filterNotNullValues
 import net.corda.core.utilities.warnOnce
 import java.security.PublicKey
 import java.time.Duration
@@ -58,7 +59,7 @@ open class TransactionBuilder @JvmOverloads constructor(
 
     private val inputsWithTransactionState = arrayListOf<TransactionState<ContractState>>()
     private val referencesWithTransactionState = arrayListOf<TransactionState<ContractState>>()
-
+    private val contractClassNameToInputStateRef = mutableMapOf<ContractClassName, MutableSet<StateRef>>()
     /**
      * Creates a copy of the builder.
      */
@@ -124,18 +125,6 @@ open class TransactionBuilder @JvmOverloads constructor(
             checkConstraintValidity(state)
         }
 
-//        val inputsAttchamentsVersions2 : List<Pair<ContractClassName, Attachment?>> = inputs.map {
-//             Pair(services.loadState(it).contract, services.loadContractAttachment(it)) }
-//
-//        val inputsAttchamentsVersions3 : List<Pair<ContractClassName, Attachment>> = inputsAttchamentsVersions2.filter { it.second != null }
-//                .map { Pair(it.first, it.second as Attachment) }
-//
-//        val inputsAttchamentsVersions4: List<Pair<ContractClassName, Version>> =
-//                inputsAttchamentsVersions3.map { Pair(it.first, Version(it.second.openAsJAR().manifest.mainAttributes.getValue("Implementation-Version"))) }
-//
-//        val inputContractClassToJArVersion: Map<ContractClassName, Set<Version>> = inputsAttchamentsVersions4.groupBy { it.first }
-//                .mapValues { it.value.map { p -> p.second }.toSet() }
-
         return SerializationFactory.defaultFactory.withCurrentContext(serializationContext) {
             WireTransaction(
                     createComponentGroups(
@@ -192,7 +181,7 @@ open class TransactionBuilder @JvmOverloads constructor(
         // For each contract, resolve the AutomaticPlaceholderConstraint, and select the attachment.
         val contractAttachmentsAndResolvedOutputStates: List<Pair<Set<AttachmentId>, List<TransactionState<ContractState>>?>> = allContracts.toSet()
                 .map { ctr ->
-                    handleContract(ctr, inputContractGroups[ctr], outputContractGroups[ctr], explicitAttachmentContractsMap[ctr], services)
+                    handleContract(ctr, inputContractGroups[ctr], contractClassNameToInputStateRef[ctr], outputContractGroups[ctr], explicitAttachmentContractsMap[ctr], services)
                 }
 
         val resolvedStates: List<TransactionState<ContractState>> = contractAttachmentsAndResolvedOutputStates.mapNotNull { it.second }
@@ -226,6 +215,7 @@ open class TransactionBuilder @JvmOverloads constructor(
     private fun handleContract(
             contractClassName: ContractClassName,
             inputStates: List<TransactionState<ContractState>>?,
+            inputStateRefs: Set<StateRef>?,
             outputStates: List<TransactionState<ContractState>>?,
             explicitContractAttachment: AttachmentId?,
             services: ServicesForResolution
@@ -329,6 +319,11 @@ open class TransactionBuilder @JvmOverloads constructor(
                 it
             }
         }
+        //TODO non-downgrade-rule modify to search only for specific ContractClass not all
+        val inputContractClassToJarVersion = resolveContractAttachmentVersion(states = inputStateRefs?.map { Pair(services.loadState(it).contract, it) } ?: emptyList(),
+                resolveAttachment = { services.attachments.openAttachment(it) },
+                resolveContractAttachment = { services.loadContractAttachment(it) })
+        requireCompatibleContractClassVersions(contractClassName, inputContractClassToJarVersion[contractClassName], attachmentToUse, SecureHash.zeroHash)
 
         return Pair(setOf(selectedAttachmentId), resolvedOutputStates)
     }
@@ -530,8 +525,14 @@ open class TransactionBuilder @JvmOverloads constructor(
         checkNotary(stateAndRef)
         inputs.add(stateAndRef.ref)
         inputsWithTransactionState.add(stateAndRef.state)
-        resolveStatePointers(stateAndRef.state)
-        return this
+        contractClassNameToInputStateRef.compute(stateAndRef.state.contract) { _, set ->
+            if (set == null) {
+                mutableSetOf(stateAndRef.ref)
+            } else {
+                set.add(stateAndRef.ref)
+                set
+            }
+        }
     }
 
     /** Adds an attachment with the specified hash to the TransactionBuilder. */
