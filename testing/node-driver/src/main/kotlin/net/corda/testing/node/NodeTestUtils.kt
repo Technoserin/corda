@@ -10,15 +10,10 @@ import net.corda.core.identity.Party
 import net.corda.core.node.ServiceHub
 import net.corda.core.serialization.internal.effectiveSerializationEnv
 import net.corda.core.transactions.TransactionBuilder
-import net.corda.testing.core.SerializationEnvironmentRule
 import net.corda.testing.core.TestIdentity
-import net.corda.testing.dsl.EnforceVerifyOrFail
-import net.corda.testing.dsl.LedgerDSL
-import net.corda.testing.dsl.LedgerDSLInterpreter
-import net.corda.testing.dsl.TestLedgerDSLInterpreter
-import net.corda.testing.dsl.TestTransactionDSLInterpreter
-import net.corda.testing.dsl.TransactionDSL
-import net.corda.testing.dsl.TransactionDSLInterpreter
+import net.corda.testing.dsl.*
+import net.corda.testing.internal.asTestContextEnv
+import net.corda.testing.internal.createTestSerializationEnv
 
 /**
  * Creates and tests a ledger built by the passed in dsl.
@@ -38,7 +33,7 @@ fun ServiceHub.ledger(
         if (serializationExists) {
             script()
         } else {
-            SerializationEnvironmentRule.run("ledger") { script() }
+            createTestSerializationEnv().asTestContextEnv { script() }
         }
     }
 }
