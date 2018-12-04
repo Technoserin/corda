@@ -25,7 +25,8 @@ data class CordappImpl(
         override val customSchemas: Set<MappedSchema>,
         override val allFlows: List<Class<out FlowLogic<*>>>,
         override val jarPath: URL,
-        val info: Info,
+        val info: Cordapp.Info,
+        val cordappInfo: Cordapp,
         override val jarHash: SecureHash.SHA256,
         override val notaryService: Class<out NotaryService>? = null,
         /** Indicates whether the CorDapp is loaded from external sources, or generated on node startup (virtual). */
@@ -46,13 +47,26 @@ data class CordappImpl(
         classList.mapNotNull { it?.name } + contractClassNames
     }
 
-    // TODO Why a seperate Info class and not just have the fields directly in CordappImpl?
-    data class Info(val shortName: String, val vendor: String, val version: String, val minimumPlatformVersion: Int, val targetPlatformVersion: Int) {
+
+    sealed class Cordapp {
         companion object {
             const val UNKNOWN_VALUE = "Unknown"
-            val UNKNOWN = Info(UNKNOWN_VALUE, UNKNOWN_VALUE, UNKNOWN_VALUE, 1, 1)
         }
+        /** new identifiers (from Corda 4) */
+        /** a Contract Cordapp contains contract definitions (state, commands) and verification logic */
+        data class Contract(val name: String, val vendor: String, val version: Int, val licence: String, val minimumPlatformVersion: Int, val targetPlatformVersion: Int)
+            : Cordapp()
+        /** a Workflow Cordapp contains flows and services used to implement business transactions using contracts and states persisted to the immutable ledger */
+        data class Workflow(val name: String, val vendor: String, val version: Int, val licence: String, val minimumPlatformVersion: Int, val targetPlatformVersion: Int)
+            : Cordapp()
 
-        fun hasUnknownFields(): Boolean = arrayOf(shortName, vendor, version).any { it == UNKNOWN_VALUE }
+        /** original (to Corda 3) */
+        data class Info(val shortName: String, val vendor: String, val version: String, val licence: String, val minimumPlatformVersion: Int, val targetPlatformVersion: Int)
+            : Cordapp() {
+            companion object {
+                val UNKNOWN = Info(UNKNOWN_VALUE, UNKNOWN_VALUE, UNKNOWN_VALUE, UNKNOWN_VALUE, 1, 1)
+            }
+            fun hasUnknownFields(): Boolean = arrayOf(shortName, vendor, version).any { it == UNKNOWN_VALUE }
+        }
     }
 }

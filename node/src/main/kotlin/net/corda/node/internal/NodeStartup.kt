@@ -243,7 +243,7 @@ open class NodeStartup : NodeStartupLogging {
     }
 
     protected open fun logLoadedCorDapps(corDapps: List<CordappImpl>) {
-        fun CordappImpl.Info.description() = "$shortName version $version by $vendor"
+        fun CordappImpl.Info.description() = "$name version $version by $vendor with licence $licence"
 
         Node.printBasicNodeInfo("Loaded ${corDapps.size} CorDapp(s)", corDapps.map { it.info }.joinToString(", ", transform = CordappImpl.Info::description))
         corDapps.map { it.info }.filter { it.hasUnknownFields() }.let { malformed ->
