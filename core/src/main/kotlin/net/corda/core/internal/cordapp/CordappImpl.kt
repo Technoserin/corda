@@ -2,7 +2,6 @@ package net.corda.core.internal.cordapp
 
 import net.corda.core.DeleteForDJVM
 import net.corda.core.cordapp.Cordapp
-import net.corda.core.cordapp.CordappInfo
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowLogic
 import net.corda.core.internal.notary.NotaryService

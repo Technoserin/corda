@@ -1,4 +1,4 @@
-package net.corda.core.cordapp
+package net.corda.core.internal.cordapp
 
 /** abstract class used to maintain backwards compatibility */
 abstract class CordappInfo(open val name: String, open val vendor: String, open val version: String, open val minimumPlatformVersion: Int, open val targetPlatformVersion: Int) {

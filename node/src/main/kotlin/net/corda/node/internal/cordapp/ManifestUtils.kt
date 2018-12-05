@@ -1,6 +1,5 @@
 package net.corda.node.internal.cordapp
 
-import net.corda.core.cordapp.*
 import net.corda.core.internal.cordapp.*
 import net.corda.core.utilities.loggerFor
 import java.util.jar.Attributes

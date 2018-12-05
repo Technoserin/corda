@@ -1,6 +1,5 @@
 package net.corda.core.internal.cordapp
 
-import net.corda.core.cordapp.CordappInfo
 import net.corda.core.internal.PLATFORM_VERSION
 import net.corda.core.internal.VisibleForTesting
 import net.corda.core.utilities.loggerFor
