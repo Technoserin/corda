@@ -2,6 +2,7 @@ package net.corda.core.internal.cordapp
 
 import net.corda.core.DeleteForDJVM
 import net.corda.core.cordapp.Cordapp
+import net.corda.core.cordapp.CordappInfo
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowLogic
 import net.corda.core.internal.notary.NotaryService
@@ -25,8 +26,7 @@ data class CordappImpl(
         override val customSchemas: Set<MappedSchema>,
         override val allFlows: List<Class<out FlowLogic<*>>>,
         override val jarPath: URL,
-        val info: Cordapp.Info,
-        val cordappInfo: Cordapp,
+        val info: CordappInfo,
         override val jarHash: SecureHash.SHA256,
         override val notaryService: Class<out NotaryService>? = null,
         /** Indicates whether the CorDapp is loaded from external sources, or generated on node startup (virtual). */
@@ -47,26 +47,14 @@ data class CordappImpl(
         classList.mapNotNull { it?.name } + contractClassNames
     }
 
-
-    sealed class Cordapp {
+    /** original (to Corda 3) */
+    data class Info(val shortName: String, override val vendor: String, override val version: String, override val minimumPlatformVersion: Int, override val targetPlatformVersion: Int)
+        : CordappInfo(shortName, vendor, version, minimumPlatformVersion, targetPlatformVersion) {
         companion object {
             const val UNKNOWN_VALUE = "Unknown"
+            val UNKNOWN = Info(UNKNOWN_VALUE, UNKNOWN_VALUE, UNKNOWN_VALUE, 1, 1)
         }
-        /** new identifiers (from Corda 4) */
-        /** a Contract Cordapp contains contract definitions (state, commands) and verification logic */
-        data class Contract(val name: String, val vendor: String, val version: Int, val licence: String, val minimumPlatformVersion: Int, val targetPlatformVersion: Int)
-            : Cordapp()
-        /** a Workflow Cordapp contains flows and services used to implement business transactions using contracts and states persisted to the immutable ledger */
-        data class Workflow(val name: String, val vendor: String, val version: Int, val licence: String, val minimumPlatformVersion: Int, val targetPlatformVersion: Int)
-            : Cordapp()
-
-        /** original (to Corda 3) */
-        data class Info(val shortName: String, val vendor: String, val version: String, val licence: String, val minimumPlatformVersion: Int, val targetPlatformVersion: Int)
-            : Cordapp() {
-            companion object {
-                val UNKNOWN = Info(UNKNOWN_VALUE, UNKNOWN_VALUE, UNKNOWN_VALUE, UNKNOWN_VALUE, 1, 1)
-            }
-            fun hasUnknownFields(): Boolean = arrayOf(shortName, vendor, version).any { it == UNKNOWN_VALUE }
-        }
+        override fun hasUnknownFields(): Boolean = arrayOf(shortName, vendor, version).any { it == UNKNOWN_VALUE }
+        override fun description() = "CorDapp $name version $version by $vendor"
     }
 }
