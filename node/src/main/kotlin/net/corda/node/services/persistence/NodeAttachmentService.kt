@@ -356,7 +356,7 @@ class NodeAttachmentService(
 
     private fun getVersion(attachmentBytes: ByteArray) =
         JarInputStream(attachmentBytes.inputStream()).use {
-            it.manifest?.mainAttributes?.getValue(IMPLEMENTATION_VERSION) ?: "1.0"
+            it.manifest?.mainAttributes?.getValue(IMPLEMENTATION_VERSION) ?: "1"
         }
 
     @Suppress("OverridingDeprecatedMember")

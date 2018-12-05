@@ -1,7 +1,6 @@
 package net.corda.core.contracts
 
 import net.corda.core.KeepForDJVM
-import net.corda.core.internal.UNKNOWN_VERSION
 import net.corda.core.serialization.CordaSerializable
 import java.security.PublicKey
 import java.util.jar.Attributes
@@ -21,7 +20,7 @@ class ContractAttachment @JvmOverloads constructor(
         val additionalContracts: Set<ContractClassName> = emptySet(),
         val uploader: String? = null,
         override val signerKeys: List<PublicKey> = emptyList(),
-        val version: String = UNKNOWN_VERSION) : Attachment by attachment {
+        val version: String = "0") : Attachment by attachment {
 
     val allContracts: Set<ContractClassName> get() = additionalContracts + contract
 
@@ -30,11 +29,6 @@ class ContractAttachment @JvmOverloads constructor(
     override fun toString(): String {
         return "ContractAttachment(attachment=${attachment.id}, contracts='$allContracts', uploader='$uploader', signed='$isSigned', version='$version')"
     }
-
-    /**
-     * Contract version.
-     */
-    val version: String get() = extractVersion(attachment)
 
     companion object {
         private fun extractVersion(attachment: Attachment) =
@@ -46,7 +40,7 @@ class ContractAttachment @JvmOverloads constructor(
             } else {
                 extractVersion(attachment)
             }
-            return Integer.parseInt(version)
+            return try { Integer.parseInt(version) } catch (e: NumberFormatException) { Integer.parseInt(version.substring(0, version.indexOf("."))) }
         }
     }
 }
